@@ -37,6 +37,28 @@ public class PropiedadController {
 
     @GetMapping("/agente/{agenteId}")
     public List<Propiedad> listarPorAgente(@PathVariable UUID agenteId) {
-        return propiedadRepository.findByAgenteId(agenteId);
+        return propiedadRepository.findByAgenteIdWithImagenes(agenteId);
+    }
+
+    @PutMapping("/{id}")
+    public Propiedad actualizar(
+            @PathVariable UUID id,
+            @RequestBody Propiedad propiedadActualizada) {
+        Propiedad propiedad = propiedadRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Propiedad no encontrada con ID: " + id));
+
+        propiedad.setTitulo(propiedadActualizada.getTitulo());
+        propiedad.setDescripcion(propiedadActualizada.getDescripcion());
+        propiedad.setDireccion(propiedadActualizada.getDireccion());
+        propiedad.setCiudad(propiedadActualizada.getCiudad());
+        propiedad.setPrecio(propiedadActualizada.getPrecio());
+        propiedad.setSuperficieM2(propiedadActualizada.getSuperficieM2());
+        propiedad.setHabitaciones(propiedadActualizada.getHabitaciones());
+        propiedad.setBanios(propiedadActualizada.getBanios());
+        propiedad.setEstado(propiedadActualizada.getEstado());
+        propiedad.setOperacion(propiedadActualizada.getOperacion());
+        propiedad.setMoneda(propiedadActualizada.getMoneda());
+
+        return propiedadRepository.save(propiedad);
     }
 }

@@ -32,4 +32,21 @@ public class ImagenPropiedadController {
     public void eliminar(@PathVariable UUID id) {
         repository.deleteById(id);
     }
+
+    @PostMapping("/upload")
+public String upload(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+    try {
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+
+        java.nio.file.Path path = java.nio.file.Paths.get("uploads/" + fileName);
+        java.nio.file.Files.createDirectories(path.getParent());
+        java.nio.file.Files.write(path, file.getBytes());
+
+        return "http://localhost:8080/uploads/" + fileName;
+
+    } catch (Exception e) {
+        throw new RuntimeException("Error subiendo imagen");
+    }
+}
+
 }

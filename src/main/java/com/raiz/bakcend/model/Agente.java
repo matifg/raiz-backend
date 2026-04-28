@@ -17,7 +17,7 @@ public class Agente {
     @Column(name = "usuario_id", nullable = false)
     private UUID usuarioId;
 
-    @Column(name = "inmobiliaria_id", nullable = false)
+    @Column(name = "inmobiliaria_id")
     private UUID inmobiliariaId;
 
     @Column(name = "activo")
@@ -31,5 +31,8 @@ public class Agente {
 
     @Column(name = "password_hash")
     private String passwordHash;
+
+    @Column(name = "nombre_inmobiliaria")
+    private String nombreInmobiliaria;
 
 }
