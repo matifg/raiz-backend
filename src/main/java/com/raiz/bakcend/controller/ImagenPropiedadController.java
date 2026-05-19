@@ -30,7 +30,13 @@ public class ImagenPropiedadController {
 
     @DeleteMapping("/{id}")
     public void eliminar(@PathVariable UUID id) {
+        if (!repository.existsById(id)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.NOT_FOUND, "Imagen no encontrada"
+            );
+        }
         repository.deleteById(id);
+        System.out.println("Imagen eliminada: " + id);
     }
 
     @PostMapping("/upload")

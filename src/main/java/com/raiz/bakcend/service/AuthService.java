@@ -15,6 +15,8 @@ public class AuthService {
     private final AgenteRepository agenteRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthService.class);
+
     public AuthService(UsuarioRepository usuarioRepository, AgenteRepository agenteRepository, BCryptPasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.agenteRepository = agenteRepository;
@@ -39,14 +41,19 @@ public class AuthService {
         usuario.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         usuario.setRol(req.getRol());
         usuario.setActivo(true);
+        usuario.setMembresiaActiva(false);
 
         usuario = usuarioRepository.save(usuario);
 
+        log.info("Registrando usuario email={} rol={}", req.getEmail(), req.getRol());
+
         // Si el rol es AGENTE, crear el agente asociado
-        if ("AGENTE".equalsIgnoreCase(usuario.getRol())) {
+        if (req.getRol().equalsIgnoreCase("AGENTE")) {
             Agente agente = new Agente();
             agente.setUsuarioId(usuario.getId());
+            agente.setActivo(true);
             agenteRepository.save(agente);
+            log.info("Agente creado para usuario_id={}", usuario.getId());
         }
 
         return usuario;

@@ -16,29 +16,34 @@ import java.util.List;
 public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/propiedades").permitAll() // Permite acceso público a /propiedades
-                        .requestMatchers("/auth/login").permitAll() // Permite acceso público a /login
-                        .requestMatchers("/auth/register").permitAll() // Permite acceso público a /register
-
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(jwtAuthenticationFilter(), org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
-                .httpBasic(org.springframework.security.config.Customizer.withDefaults()); // Habilita Basic Auth
-        return http.build();
+    http
+        .csrf(csrf -> csrf.disable())
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        .authorizeHttpRequests(auth -> auth
+        // Permitir GET públicos
+        .requestMatchers(org.springframework.http.HttpMethod.GET, "/propiedades/**").permitAll()
+        .requestMatchers(org.springframework.http.HttpMethod.GET, "/imagenes/**").permitAll()
+        // Permitir login y register públicos
+        .requestMatchers("/auth/login").permitAll()
+        .requestMatchers("/auth/register").permitAll()
+        // Requerir autenticación para POST
+        .requestMatchers(org.springframework.http.HttpMethod.POST, "/propiedades/**").authenticated()
+        .requestMatchers(org.springframework.http.HttpMethod.POST, "/imagenes/**").authenticated()
+        // El resto requiere autenticación
+        .anyRequest().authenticated())
+        .addFilterBefore(jwtAuthenticationFilter(),
+        org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+        .httpBasic(org.springframework.security.config.Customizer.withDefaults());
+    return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-            "http://localhost:3000",
-            "http://localhost:3001",
-            "http://192.168.0.13:3000"
-        ));
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "http://192.168.0.13:3000"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

@@ -75,4 +75,8 @@ public class Propiedad {
 
     @Column(name = "moneda", length = 3)
     private String moneda = "USD";
+
+    @Column(name = "zona", length = 100)
+    private String zona;
+
 }

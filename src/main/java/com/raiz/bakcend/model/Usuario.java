@@ -36,4 +36,7 @@ public class Usuario {
 
     @Column(name = "creado_en")
     private OffsetDateTime creadoEn;
+
+    @Column(name = "membresia_activa")
+    private Boolean membresiaActiva = false;
 }

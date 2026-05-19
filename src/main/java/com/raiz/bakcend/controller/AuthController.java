@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.raiz.bakcend.dto.LoginResponseDTO;
 
 import java.util.Map;
 import java.util.Optional;
@@ -48,22 +49,14 @@ public class AuthController {
         }
         String token = jwtService.generateToken(usuario.getId().toString());
 
-        // Si es agente, buscar el agente por usuario_id
-        if ("AGENTE".equalsIgnoreCase(usuario.getRol())) {
-            Optional<Agente> agenteOpt = agenteRepository.findByUsuarioId(usuario.getId());
-            if (agenteOpt.isPresent()) {
-                return ResponseEntity.ok(Map.of(
-                    "usuario", usuario,
-                    "agente", agenteOpt.get(),
-                    "token", token
-                ));
-            }
-        }
-        // Si no es agente, solo devuelve el usuario y el token
-        return ResponseEntity.ok(Map.of(
-            "usuario", usuario,
-            "token", token
-        ));
+        // Usar DTO en vez de Map
+        LoginResponseDTO response = new LoginResponseDTO(
+            token,
+            usuario.getRol(),
+            usuario.getMembresiaActiva(),
+            usuario.getNombre()
+        );
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/register")
