@@ -43,7 +43,9 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "http://localhost:3001",
-                "http://192.168.0.13:3000"));
+                "http://192.168.0.13:3000",
+                "https://inmobiliaria360.com.ar",
+                "https://inmportal.pages.dev"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
