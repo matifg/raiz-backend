@@ -7,6 +7,8 @@ import com.raiz.bakcend.model.Usuario;
 import com.raiz.bakcend.repository.PropiedadRepository;
 import com.raiz.bakcend.repository.UsuarioRepository;
 import com.raiz.bakcend.repository.AgenteRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,15 +22,23 @@ import java.util.stream.Collectors;
 @Service
 public class AgenteService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AgenteService.class);
+
     private final UsuarioRepository usuarioRepository;
     private final AgenteRepository agenteRepository;
     private final PropiedadRepository propiedadRepository;
+    private final AdminAgentesCacheService adminAgentesCacheService;
 
     @Autowired
-    public AgenteService(UsuarioRepository usuarioRepository, AgenteRepository agenteRepository, PropiedadRepository propiedadRepository) {
+    public AgenteService(
+            UsuarioRepository usuarioRepository,
+            AgenteRepository agenteRepository,
+            PropiedadRepository propiedadRepository,
+            AdminAgentesCacheService adminAgentesCacheService) {
         this.usuarioRepository = usuarioRepository;
         this.agenteRepository = agenteRepository;
         this.propiedadRepository = propiedadRepository;
+        this.adminAgentesCacheService = adminAgentesCacheService;
     }
 
     /**
@@ -50,6 +60,17 @@ public class AgenteService {
 
 
     public AgenteAdminPageResponse listarAgentesAdminPaginado(int page, int size) {
+        String cacheKey = adminAgentesCacheService.buildKey(page, size);
+        long cacheLookupStart = System.nanoTime();
+        AgenteAdminPageResponse cached = adminAgentesCacheService.get(page, size);
+
+        if (cached != null) {
+            long cacheTimeMs = (System.nanoTime() - cacheLookupStart) / 1_000_000;
+            logger.info("[ADMIN_CACHE] CACHE TIME={}ms key={}", cacheTimeMs, cacheKey);
+            return cached;
+        }
+
+        long dbStart = System.nanoTime();
         Pageable pageable = PageRequest.of(page, size);
         Page<Agente> agentesPage = agenteRepository.findAll(pageable);
 
@@ -72,6 +93,9 @@ public class AgenteService {
         response.setPage(page);
         response.setSize(size);
         response.setTotalPages(agentesPage.getTotalPages());
+        long dbTimeMs = (System.nanoTime() - dbStart) / 1_000_000;
+        logger.info("[ADMIN_CACHE] DB TIME={}ms key={}", dbTimeMs, cacheKey);
+        adminAgentesCacheService.put(page, size, response);
         return response;
     }
 }

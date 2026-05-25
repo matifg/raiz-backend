@@ -1,18 +1,15 @@
 package com.raiz.bakcend.controller;
 
+import com.raiz.bakcend.service.AdminAgentesCacheService;
 import com.raiz.bakcend.service.AgenteService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.raiz.bakcend.dto.AgenteAdminPageResponse;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.raiz.bakcend.repository.UsuarioRepository;
 import org.springframework.http.ResponseEntity;
 import com.raiz.bakcend.model.Usuario;
 import com.raiz.bakcend.dto.UsuarioResponseDTO;
-
-
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -27,17 +24,22 @@ public class AdminController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
     private final AgenteService agenteService;
+    private final AdminAgentesCacheService adminAgentesCacheService;
     private final UsuarioRepository usuarioRepository;
 
-    public AdminController(AgenteService agenteService, UsuarioRepository usuarioRepository) {
+    public AdminController(
+        AgenteService agenteService,
+        AdminAgentesCacheService adminAgentesCacheService,
+        UsuarioRepository usuarioRepository) {
         this.agenteService = agenteService;
+        this.adminAgentesCacheService = adminAgentesCacheService;
         this.usuarioRepository = usuarioRepository;
     }
 
     @GetMapping("/agentes")
     public ResponseEntity<?> listarAgentes(
         @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "9999") int size,
         Authentication authentication
     ) {
         logger.info("--- INICIO /admin/agentes ---");
@@ -89,8 +91,9 @@ public class AdminController {
         // 3. Actualizar membresiaActiva
         usuario.setMembresiaActiva(request.membresiaActiva);
 
-    // 4. Guardar usuario
-    usuarioRepository.save(usuario);
+        // 4. Guardar usuario
+        usuarioRepository.save(usuario);
+        adminAgentesCacheService.evictAll("membership-updated userId=" + usuario.getId());
 
         // 5. Devolver usuario actualizado como DTO
         UsuarioResponseDTO response = new UsuarioResponseDTO(

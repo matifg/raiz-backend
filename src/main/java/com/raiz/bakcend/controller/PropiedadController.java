@@ -1,6 +1,7 @@
 package com.raiz.bakcend.controller;
 
 import com.raiz.bakcend.model.Propiedad;
+import com.raiz.bakcend.service.AdminAgentesCacheService;
 import com.raiz.bakcend.repository.PropiedadRepository;
 import com.raiz.bakcend.repository.AgenteRepository;
 import com.raiz.bakcend.model.Agente;
@@ -16,10 +17,15 @@ public class PropiedadController {
 
     private final PropiedadRepository propiedadRepository;
     private final AgenteRepository agenteRepository;
+    private final AdminAgentesCacheService adminAgentesCacheService;
 
-    public PropiedadController(PropiedadRepository propiedadRepository, AgenteRepository agenteRepository) {
+    public PropiedadController(
+            PropiedadRepository propiedadRepository,
+            AgenteRepository agenteRepository,
+            AdminAgentesCacheService adminAgentesCacheService) {
         this.propiedadRepository = propiedadRepository;
         this.agenteRepository = agenteRepository;
+        this.adminAgentesCacheService = adminAgentesCacheService;
     }
 
     @GetMapping
@@ -49,7 +55,9 @@ public class PropiedadController {
         // Setear el agenteId antes de guardar
         propiedad.setAgenteId(agente.getId());
 
-        return propiedadRepository.save(propiedad);
+        Propiedad creada = propiedadRepository.save(propiedad);
+        adminAgentesCacheService.evictAll("property-created propiedadId=" + creada.getId());
+        return creada;
     }
 
     @GetMapping("/agente/{agenteId}")
@@ -77,7 +85,9 @@ public class PropiedadController {
         propiedad.setMoneda(propiedadActualizada.getMoneda());
         propiedad.setZona(propiedadActualizada.getZona());
 
-        return propiedadRepository.save(propiedad);
+        Propiedad guardada = propiedadRepository.save(propiedad);
+        adminAgentesCacheService.evictAll("property-updated propiedadId=" + guardada.getId());
+        return guardada;
     }
 
     @DeleteMapping("/{id}")
@@ -89,5 +99,6 @@ public class PropiedadController {
             );
         }
         propiedadRepository.deleteById(id);
+        adminAgentesCacheService.evictAll("property-deleted propiedadId=" + id);
     }
 }
