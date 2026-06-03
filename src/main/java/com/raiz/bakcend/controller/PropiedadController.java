@@ -2,6 +2,7 @@ package com.raiz.bakcend.controller;
 
 import com.raiz.bakcend.model.Propiedad;
 import com.raiz.bakcend.service.AdminAgentesCacheService;
+import com.raiz.bakcend.service.PropiedadPortadaService;
 import com.raiz.bakcend.repository.PropiedadRepository;
 import com.raiz.bakcend.repository.AgenteRepository;
 import com.raiz.bakcend.model.Agente;
@@ -18,25 +19,29 @@ public class PropiedadController {
     private final PropiedadRepository propiedadRepository;
     private final AgenteRepository agenteRepository;
     private final AdminAgentesCacheService adminAgentesCacheService;
+    private final PropiedadPortadaService propiedadPortadaService;
 
     public PropiedadController(
             PropiedadRepository propiedadRepository,
             AgenteRepository agenteRepository,
-            AdminAgentesCacheService adminAgentesCacheService) {
+            AdminAgentesCacheService adminAgentesCacheService,
+            PropiedadPortadaService propiedadPortadaService) {
         this.propiedadRepository = propiedadRepository;
         this.agenteRepository = agenteRepository;
         this.adminAgentesCacheService = adminAgentesCacheService;
+        this.propiedadPortadaService = propiedadPortadaService;
     }
 
     @GetMapping
     public List<Propiedad> listar() {
-        return propiedadRepository.findAll();
+        return propiedadPortadaService.aplicarPortadas(propiedadRepository.findAll());
     }
 
     @GetMapping("/{id}")
     public Propiedad obtener(@PathVariable UUID id) {
-        return propiedadRepository.findById(id)
+        Propiedad propiedad = propiedadRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Propiedad no encontrada con ID: " + id));
+        return propiedadPortadaService.aplicarPortada(propiedad);
     }
 
     @PostMapping
@@ -62,7 +67,8 @@ public class PropiedadController {
 
     @GetMapping("/agente/{agenteId}")
     public List<Propiedad> listarPorAgente(@PathVariable UUID agenteId) {
-        return propiedadRepository.findByAgenteIdWithImagenes(agenteId);
+        return propiedadPortadaService.aplicarPortadas(
+                propiedadRepository.findByAgenteIdWithImagenes(agenteId));
     }
 
     @PutMapping("/{id}")
