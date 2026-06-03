@@ -23,6 +23,7 @@ public class SecurityConfig {
         // Permitir GET públicos
         .requestMatchers(org.springframework.http.HttpMethod.GET, "/propiedades/**").permitAll()
         .requestMatchers(org.springframework.http.HttpMethod.GET, "/imagenes/**").permitAll()
+        .requestMatchers(org.springframework.http.HttpMethod.GET, "/ubicaciones/**").permitAll()
         // Permitir login y register públicos
         .requestMatchers("/auth/login").permitAll()
         .requestMatchers("/auth/register").permitAll()
