@@ -14,13 +14,19 @@ public class AuthService {
     private final UsuarioRepository usuarioRepository;
     private final AgenteRepository agenteRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final AdminAgentesCacheService adminAgentesCacheService;
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthService.class);
 
-    public AuthService(UsuarioRepository usuarioRepository, AgenteRepository agenteRepository, BCryptPasswordEncoder passwordEncoder) {
+    public AuthService(
+            UsuarioRepository usuarioRepository,
+            AgenteRepository agenteRepository,
+            BCryptPasswordEncoder passwordEncoder,
+            AdminAgentesCacheService adminAgentesCacheService) {
         this.usuarioRepository = usuarioRepository;
         this.agenteRepository = agenteRepository;
         this.passwordEncoder = passwordEncoder;
+        this.adminAgentesCacheService = adminAgentesCacheService;
     }
 
     /**
@@ -53,6 +59,7 @@ public class AuthService {
             agente.setUsuarioId(usuario.getId());
             agente.setActivo(true);
             agenteRepository.save(agente);
+            adminAgentesCacheService.evictAll("agent-registered userId=" + usuario.getId());
             log.info("Agente creado para usuario_id={}", usuario.getId());
         }
 
