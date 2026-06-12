@@ -83,6 +83,7 @@ public class PropiedadController {
         propiedad.setDireccion(propiedadActualizada.getDireccion());
         propiedad.setCiudad(propiedadActualizada.getCiudad());
         propiedad.setPrecio(propiedadActualizada.getPrecio());
+        propiedad.setOcultarPrecio(propiedadActualizada.getOcultarPrecio());
         propiedad.setSuperficieM2(propiedadActualizada.getSuperficieM2());
         propiedad.setHabitaciones(propiedadActualizada.getHabitaciones());
         propiedad.setBanios(propiedadActualizada.getBanios());

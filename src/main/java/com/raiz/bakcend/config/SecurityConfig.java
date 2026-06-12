@@ -30,6 +30,8 @@ public class SecurityConfig {
         // Requerir autenticación para POST
         .requestMatchers(org.springframework.http.HttpMethod.POST, "/propiedades/**").authenticated()
         .requestMatchers(org.springframework.http.HttpMethod.POST, "/imagenes/**").authenticated()
+        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/imagenes/**").authenticated()
+        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/imagenes/**").authenticated()
         // El resto requiere autenticación
         .anyRequest().authenticated())
         .addFilterBefore(jwtAuthenticationFilter(),

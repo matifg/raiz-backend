@@ -7,11 +7,21 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ImagenPropiedadRepository extends JpaRepository<ImagenPropiedad, UUID> {
 
     List<ImagenPropiedad> findByPropiedadId(UUID propiedadId);
+
+    List<ImagenPropiedad> findByPropiedadIdOrderByOrdenAscCreadoEnAsc(UUID propiedadId);
+
+    @Query("""
+            SELECT i FROM ImagenPropiedad i
+            JOIN FETCH i.propiedad p
+            WHERE i.id = :id
+            """)
+    Optional<ImagenPropiedad> findByIdWithPropiedad(@Param("id") UUID id);
 
     @Query("""
             SELECT i FROM ImagenPropiedad i

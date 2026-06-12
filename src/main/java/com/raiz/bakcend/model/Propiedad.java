@@ -36,6 +36,9 @@ public class Propiedad {
     @Column(nullable = false, scale = 2, precision = 14)
     private BigDecimal precio;
 
+    @Column(name = "ocultar_precio", nullable = false, columnDefinition = "boolean not null default false")
+    private Boolean ocultarPrecio = false;
+
     @Column(name = "superficie_m2", nullable = false, scale = 2, precision = 10)
     private BigDecimal superficieM2;
 

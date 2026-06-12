@@ -3,7 +3,10 @@ package com.raiz.bakcend.service;
 import com.raiz.bakcend.model.ImagenPropiedad;
 import com.raiz.bakcend.model.Propiedad;
 import com.raiz.bakcend.repository.ImagenPropiedadRepository;
+import com.raiz.bakcend.repository.PropiedadRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,9 +18,23 @@ import java.util.UUID;
 public class PropiedadPortadaService {
 
     private final ImagenPropiedadRepository imagenPropiedadRepository;
+    private final PropiedadRepository propiedadRepository;
 
-    public PropiedadPortadaService(ImagenPropiedadRepository imagenPropiedadRepository) {
+    public PropiedadPortadaService(
+            ImagenPropiedadRepository imagenPropiedadRepository,
+            PropiedadRepository propiedadRepository) {
         this.imagenPropiedadRepository = imagenPropiedadRepository;
+        this.propiedadRepository = propiedadRepository;
+    }
+
+    public void persistirPortada(UUID propiedadId) {
+        Propiedad propiedad = propiedadRepository.findById(propiedadId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Propiedad no encontrada"));
+
+        Map<UUID, String> portadas = resolverPortadas(List.of(propiedadId));
+        propiedad.setImageUrl(portadas.get(propiedadId));
+        propiedadRepository.save(propiedad);
     }
 
     public Propiedad aplicarPortada(Propiedad propiedad) {
