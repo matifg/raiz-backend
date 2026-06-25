@@ -21,35 +21,38 @@ public class Propiedad {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @Column(nullable = false, length = 150)
+    @Column(length = 150)
     private String titulo;
 
     @Column(columnDefinition = "TEXT")
     private String descripcion;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String direccion;
 
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String ciudad;
 
-    @Column(nullable = false, scale = 2, precision = 14)
+    @Column(scale = 2, precision = 14)
     private BigDecimal precio;
 
     @Column(name = "ocultar_precio", nullable = false, columnDefinition = "boolean not null default false")
     private Boolean ocultarPrecio = false;
 
-    @Column(name = "superficie_m2", nullable = false, scale = 2, precision = 10)
+    @Column(name = "superficie_m2", scale = 2, precision = 10)
     private BigDecimal superficieM2;
 
-    @Column(nullable = false)
     private Integer habitaciones;
 
-    @Column(nullable = false)
     private Integer banios;
 
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String estado;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "publicacion_estado", nullable = false, length = 20,
+            columnDefinition = "varchar(20) not null default 'PUBLICADA'")
+    private PublicacionEstado publicacionEstado = PublicacionEstado.PUBLICADA;
 
     @Column(name = "creado_en", updatable = false, insertable = false)
     private OffsetDateTime creadoEn;
@@ -57,7 +60,7 @@ public class Propiedad {
     @Column(name = "image_url")
     private String imageUrl;
 
-    @Column(name = "tipo_id", nullable = false)
+    @Column(name = "tipo_id")
     private Integer tipoId;
 
     @Column(name = "agente_id", nullable = false)

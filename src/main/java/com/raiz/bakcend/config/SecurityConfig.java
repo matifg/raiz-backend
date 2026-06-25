@@ -24,6 +24,7 @@ public class SecurityConfig {
         .requestMatchers(org.springframework.http.HttpMethod.GET, "/propiedades/**").permitAll()
         .requestMatchers(org.springframework.http.HttpMethod.GET, "/imagenes/**").permitAll()
         .requestMatchers(org.springframework.http.HttpMethod.GET, "/ubicaciones/**").permitAll()
+        .requestMatchers(org.springframework.http.HttpMethod.GET, "/agentes/publico/**").permitAll()
         // Permitir login y register públicos
         .requestMatchers("/auth/login").permitAll()
         .requestMatchers("/auth/register").permitAll()

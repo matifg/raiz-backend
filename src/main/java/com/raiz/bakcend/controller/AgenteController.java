@@ -1,14 +1,13 @@
 package com.raiz.bakcend.controller;
 
-import com.raiz.bakcend.model.Agente;
+import com.raiz.bakcend.dto.AgenteAdminPageResponse;
+import com.raiz.bakcend.dto.AgenteResponse;
 import com.raiz.bakcend.service.AgenteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import com.raiz.bakcend.dto.AgenteAdminPageResponse;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/agentes")
@@ -20,22 +19,23 @@ public class AgenteController {
         this.agenteService = agenteService;
     }
 
-    /**
-     * Devuelve los datos del agente autenticado.
-     */
     @GetMapping("/me")
     public ResponseEntity<?> getAgenteMe(Authentication authentication) {
-        // Obtener el userId (UUID) del usuario autenticado
-        String userId = authentication.getName();
-        java.util.UUID usuarioId = java.util.UUID.fromString(userId);
+        UUID usuarioId = UUID.fromString(authentication.getName());
 
-        Optional<Agente> agenteOpt = agenteService.getAgenteByUsuarioId(usuarioId);
+        return agenteService.obtenerPorUsuarioId(usuarioId)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(403).body("No autorizado o no es agente"));
+    }
 
-        if (agenteOpt.isEmpty()) {
-            return ResponseEntity.status(403).body("No autorizado o no es agente");
-        }
+    @GetMapping("/publico/{id}")
+    public AgenteResponse obtenerPublico(@PathVariable UUID id) {
+        return agenteService.obtenerPorId(id);
+    }
 
-        return ResponseEntity.ok(agenteOpt.get());
+    @GetMapping("/{id}")
+    public AgenteResponse obtener(@PathVariable UUID id) {
+        return agenteService.obtenerPorId(id);
     }
 
     @GetMapping("/agentes")

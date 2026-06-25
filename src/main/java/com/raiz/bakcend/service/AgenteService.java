@@ -2,6 +2,7 @@ package com.raiz.bakcend.service;
 
 import com.raiz.bakcend.dto.AgenteAdminPageResponse;
 import com.raiz.bakcend.dto.AgenteAdminResponse;
+import com.raiz.bakcend.dto.AgenteResponse;
 import com.raiz.bakcend.model.Agente;
 import com.raiz.bakcend.model.Usuario;
 import com.raiz.bakcend.repository.PropiedadRepository;
@@ -13,10 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,6 +62,23 @@ public class AgenteService {
         return agenteRepository.findByUsuarioId(usuarioId);
     }
 
+    public AgenteResponse obtenerPorId(UUID agenteId) {
+        Agente agente = agenteRepository.findById(agenteId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Agente no encontrado"));
+
+        Usuario usuario = usuarioRepository.findById(agente.getUsuarioId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        return AgenteResponse.from(agente, usuario);
+    }
+
+    public Optional<AgenteResponse> obtenerPorUsuarioId(UUID usuarioId) {
+        return agenteRepository.findByUsuarioId(usuarioId)
+                .flatMap(agente -> usuarioRepository.findById(agente.getUsuarioId())
+                        .map(usuario -> AgenteResponse.from(agente, usuario)));
+    }
 
     public AgenteAdminPageResponse listarAgentesAdminPaginado(int page, int size) {
         String cacheKey = adminAgentesCacheService.buildKey(page, size);

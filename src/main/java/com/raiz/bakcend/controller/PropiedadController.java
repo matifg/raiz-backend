@@ -1,13 +1,17 @@
 package com.raiz.bakcend.controller;
 
+import com.raiz.bakcend.model.Agente;
 import com.raiz.bakcend.model.Propiedad;
+import com.raiz.bakcend.model.PublicacionEstado;
+import com.raiz.bakcend.repository.AgenteRepository;
+import com.raiz.bakcend.repository.PropiedadRepository;
 import com.raiz.bakcend.service.AdminAgentesCacheService;
 import com.raiz.bakcend.service.PropiedadPortadaService;
-import com.raiz.bakcend.repository.PropiedadRepository;
-import com.raiz.bakcend.repository.AgenteRepository;
-import com.raiz.bakcend.model.Agente;
+import com.raiz.bakcend.service.PropiedadService;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,45 +24,53 @@ public class PropiedadController {
     private final AgenteRepository agenteRepository;
     private final AdminAgentesCacheService adminAgentesCacheService;
     private final PropiedadPortadaService propiedadPortadaService;
+    private final PropiedadService propiedadService;
 
     public PropiedadController(
             PropiedadRepository propiedadRepository,
             AgenteRepository agenteRepository,
             AdminAgentesCacheService adminAgentesCacheService,
-            PropiedadPortadaService propiedadPortadaService) {
+            PropiedadPortadaService propiedadPortadaService,
+            PropiedadService propiedadService) {
         this.propiedadRepository = propiedadRepository;
         this.agenteRepository = agenteRepository;
         this.adminAgentesCacheService = adminAgentesCacheService;
         this.propiedadPortadaService = propiedadPortadaService;
+        this.propiedadService = propiedadService;
     }
 
     @GetMapping
     public List<Propiedad> listar() {
-        return propiedadPortadaService.aplicarPortadas(propiedadRepository.findAll());
+        return propiedadPortadaService.aplicarPortadas(
+                propiedadRepository.findByPublicacionEstado(PublicacionEstado.PUBLICADA));
     }
 
     @GetMapping("/{id}")
-    public Propiedad obtener(@PathVariable UUID id) {
+    public Propiedad obtener(@PathVariable UUID id, Authentication authentication) {
         Propiedad propiedad = propiedadRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Propiedad no encontrada con ID: " + id));
-        return propiedadPortadaService.aplicarPortada(propiedad);
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Propiedad no encontrada"));
+
+        if (propiedadService.esPublicada(propiedad)
+                || propiedadService.puedeVerBorrador(authentication, propiedad)) {
+            return propiedadPortadaService.aplicarPortada(propiedad);
+        }
+
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Propiedad no encontrada");
     }
 
     @PostMapping
     public Propiedad crear(@RequestBody Propiedad propiedad, Authentication authentication) {
-        // Asegura que el ID sea null para que Hibernate lo genere
         propiedad.setId(null);
 
-        // Obtener el userId del JWT
         String userId = authentication.getName();
-        java.util.UUID usuarioId = java.util.UUID.fromString(userId);
+        UUID usuarioId = UUID.fromString(userId);
 
-        // Buscar el agente correspondiente
         Agente agente = agenteRepository.findByUsuarioId(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Agente no encontrado"));
 
-        // Setear el agenteId antes de guardar
         propiedad.setAgenteId(agente.getId());
+        propiedadService.prepararNueva(propiedad);
 
         Propiedad creada = propiedadRepository.save(propiedad);
         adminAgentesCacheService.evictAll("property-created propiedadId=" + creada.getId());
@@ -76,21 +88,10 @@ public class PropiedadController {
             @PathVariable UUID id,
             @RequestBody Propiedad propiedadActualizada) {
         Propiedad propiedad = propiedadRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Propiedad no encontrada con ID: " + id));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Propiedad no encontrada con ID: " + id));
 
-        propiedad.setTitulo(propiedadActualizada.getTitulo());
-        propiedad.setDescripcion(propiedadActualizada.getDescripcion());
-        propiedad.setDireccion(propiedadActualizada.getDireccion());
-        propiedad.setCiudad(propiedadActualizada.getCiudad());
-        propiedad.setPrecio(propiedadActualizada.getPrecio());
-        propiedad.setOcultarPrecio(propiedadActualizada.getOcultarPrecio());
-        propiedad.setSuperficieM2(propiedadActualizada.getSuperficieM2());
-        propiedad.setHabitaciones(propiedadActualizada.getHabitaciones());
-        propiedad.setBanios(propiedadActualizada.getBanios());
-        propiedad.setEstado(propiedadActualizada.getEstado());
-        propiedad.setOperacion(propiedadActualizada.getOperacion());
-        propiedad.setMoneda(propiedadActualizada.getMoneda());
-        propiedad.setZona(propiedadActualizada.getZona());
+        propiedadService.aplicarActualizacion(propiedad, propiedadActualizada);
 
         Propiedad guardada = propiedadRepository.save(propiedad);
         adminAgentesCacheService.evictAll("property-updated propiedadId=" + guardada.getId());
@@ -98,11 +99,11 @@ public class PropiedadController {
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminar(@PathVariable UUID id) {
         if (!propiedadRepository.existsById(id)) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.NOT_FOUND, "Propiedad no encontrada"
+            throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Propiedad no encontrada"
             );
         }
         propiedadRepository.deleteById(id);
