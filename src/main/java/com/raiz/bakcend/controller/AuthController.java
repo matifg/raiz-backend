@@ -9,7 +9,10 @@ import com.raiz.bakcend.repository.AgenteRepository;
 import com.raiz.bakcend.service.AuthService;
 import com.raiz.bakcend.service.JwtService;
 import com.raiz.bakcend.service.TokenVerificacionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +25,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -43,16 +48,38 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        log.info("[LOGIN] Intento de login email={}", request.getEmail());
+
         Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(request.getEmail());
         if (usuarioOpt.isEmpty()) {
+            log.warn("[LOGIN] Usuario no encontrado email={}", request.getEmail());
             return ResponseEntity.status(401).body("Usuario no encontrado");
         }
         Usuario usuario = usuarioOpt.get();
+        log.info("[LOGIN] Usuario encontrado id={} email={} emailVerificado={} activo={} rol={}",
+                usuario.getId(),
+                usuario.getEmail(),
+                usuario.getEmailVerificado(),
+                usuario.getActivo(),
+                usuario.getRol());
+
         boolean passwordCorrecto = passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash());
         if (!passwordCorrecto) {
+            log.warn("[LOGIN] Password incorrecto email={}", request.getEmail());
             return ResponseEntity.status(401).body("Password incorrecto");
         }
+
+        if (!Boolean.TRUE.equals(usuario.getEmailVerificado())) {
+            log.warn("[LOGIN] Login rechazado: email no verificado email={} userId={}",
+                    usuario.getEmail(), usuario.getId());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Debés verificar tu correo electrónico antes de iniciar sesión."));
+        }
+
+        log.info("[LOGIN] Email verificado, login permitido email={}", usuario.getEmail());
+
         String token = jwtService.generateToken(usuario.getId().toString());
+        log.info("[LOGIN] JWT emitido email={} userId={}", usuario.getEmail(), usuario.getId());
 
         // Usar DTO en vez de Map
         LoginResponseDTO response = new LoginResponseDTO(

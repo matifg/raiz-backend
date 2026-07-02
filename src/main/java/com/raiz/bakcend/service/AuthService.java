@@ -61,7 +61,7 @@ public class AuthService {
 
         usuario = usuarioRepository.save(usuario);
 
-        log.info("Registrando usuario email={} rol={}", req.getEmail(), req.getRol());
+        log.info("Registrando usuario email={} rol={} emailVerificado={}", req.getEmail(), req.getRol(), usuario.getEmailVerificado());
 
         if (req.getRol().equalsIgnoreCase("AGENTE")) {
             Agente agente = new Agente();
