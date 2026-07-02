@@ -1,5 +1,6 @@
 package com.raiz.bakcend.service;
 
+import com.raiz.bakcend.dto.ActualizarPerfilAgenteRequest;
 import com.raiz.bakcend.dto.AgenteAdminPageResponse;
 import com.raiz.bakcend.dto.AgenteAdminResponse;
 import com.raiz.bakcend.dto.AgenteResponse;
@@ -8,6 +9,7 @@ import com.raiz.bakcend.model.Usuario;
 import com.raiz.bakcend.repository.PropiedadRepository;
 import com.raiz.bakcend.repository.UsuarioRepository;
 import com.raiz.bakcend.repository.AgenteRepository;
+import com.raiz.bakcend.util.TelefonoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +80,38 @@ public class AgenteService {
         return agenteRepository.findByUsuarioId(usuarioId)
                 .flatMap(agente -> usuarioRepository.findById(agente.getUsuarioId())
                         .map(usuario -> AgenteResponse.from(agente, usuario)));
+    }
+
+    public AgenteResponse actualizarPerfil(UUID usuarioId, ActualizarPerfilAgenteRequest request) {
+        Agente agente = agenteRepository.findByUsuarioId(usuarioId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.FORBIDDEN, "No autorizado o no es agente"));
+
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        if (!"AGENTE".equalsIgnoreCase(usuario.getRol())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No autorizado o no es agente");
+        }
+
+        if (isBlank(request.getNombre())) {
+            throw new IllegalArgumentException("El nombre es obligatorio.");
+        }
+        if (isBlank(request.getApellido())) {
+            throw new IllegalArgumentException("El apellido es obligatorio.");
+        }
+
+        usuario.setNombre(request.getNombre().trim());
+        usuario.setApellido(request.getApellido().trim());
+        usuario.setTelefono(TelefonoUtil.normalizarOpcional(request.getTelefono()));
+
+        usuarioRepository.save(usuario);
+        return AgenteResponse.from(agente, usuario);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     public AgenteAdminPageResponse listarAgentesAdminPaginado(int page, int size) {

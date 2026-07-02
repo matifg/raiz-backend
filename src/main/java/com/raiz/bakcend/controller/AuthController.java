@@ -8,6 +8,7 @@ import com.raiz.bakcend.repository.UsuarioRepository;
 import com.raiz.bakcend.repository.AgenteRepository;
 import com.raiz.bakcend.service.AuthService;
 import com.raiz.bakcend.service.JwtService;
+import com.raiz.bakcend.service.TokenVerificacionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import com.raiz.bakcend.dto.LoginResponseDTO;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth")
@@ -35,6 +37,9 @@ public class AuthController {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private TokenVerificacionService tokenVerificacionService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
@@ -65,9 +70,15 @@ public class AuthController {
             Usuario usuario = authService.register(request);
             return ResponseEntity.ok(usuario);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error interno");
         }
+    }
+
+    @GetMapping("/verificar-email")
+    public ResponseEntity<Map<String, String>> verificarEmail(@RequestParam UUID token) {
+        String message = tokenVerificacionService.verificarCuenta(token);
+        return ResponseEntity.ok(Map.of("message", message));
     }
 }

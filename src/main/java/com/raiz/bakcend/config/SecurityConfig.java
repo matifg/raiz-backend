@@ -28,6 +28,8 @@ public class SecurityConfig {
         // Permitir login y register públicos
         .requestMatchers("/auth/login").permitAll()
         .requestMatchers("/auth/register").permitAll()
+        .requestMatchers(org.springframework.http.HttpMethod.GET, "/auth/verificar-email").permitAll()
+        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/test/email").permitAll()
         // Requerir autenticación para POST
         .requestMatchers(org.springframework.http.HttpMethod.POST, "/propiedades/**").authenticated()
         .requestMatchers(org.springframework.http.HttpMethod.POST, "/imagenes/**").authenticated()

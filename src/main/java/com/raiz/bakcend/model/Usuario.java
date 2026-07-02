@@ -39,4 +39,7 @@ public class Usuario {
 
     @Column(name = "membresia_activa")
     private Boolean membresiaActiva = false;
+
+    @Column(name = "email_verificado", nullable = false, columnDefinition = "boolean not null default false")
+    private Boolean emailVerificado = false;
 }
