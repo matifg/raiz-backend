@@ -29,6 +29,8 @@ public class SecurityConfig {
         .requestMatchers("/auth/login").permitAll()
         .requestMatchers("/auth/register").permitAll()
         .requestMatchers(org.springframework.http.HttpMethod.GET, "/auth/verificar-email").permitAll()
+        .requestMatchers("/auth/recuperar-password").permitAll()
+        .requestMatchers("/auth/restablecer-password").permitAll()
         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/test/email").permitAll()
         // Requerir autenticación para POST
         .requestMatchers(org.springframework.http.HttpMethod.POST, "/propiedades/**").authenticated()

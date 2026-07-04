@@ -1,13 +1,16 @@
 package com.raiz.bakcend.controller;
 
+import com.raiz.bakcend.dto.ForgotPasswordRequest;
 import com.raiz.bakcend.dto.LoginRequest;
 import com.raiz.bakcend.dto.CreateUsuarioRequest;
+import com.raiz.bakcend.dto.ResetPasswordRequest;
 import com.raiz.bakcend.model.Usuario;
 import com.raiz.bakcend.model.Agente;
 import com.raiz.bakcend.repository.UsuarioRepository;
 import com.raiz.bakcend.repository.AgenteRepository;
 import com.raiz.bakcend.service.AuthService;
 import com.raiz.bakcend.service.JwtService;
+import com.raiz.bakcend.service.PasswordResetService;
 import com.raiz.bakcend.service.TokenVerificacionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +48,9 @@ public class AuthController {
 
     @Autowired
     private TokenVerificacionService tokenVerificacionService;
+
+    @Autowired
+    private PasswordResetService passwordResetService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
@@ -106,6 +112,18 @@ public class AuthController {
     @GetMapping("/verificar-email")
     public ResponseEntity<Map<String, String>> verificarEmail(@RequestParam UUID token) {
         String message = tokenVerificacionService.verificarCuenta(token);
+        return ResponseEntity.ok(Map.of("message", message));
+    }
+
+    @PostMapping("/recuperar-password")
+    public ResponseEntity<Map<String, String>> recuperarPassword(@RequestBody ForgotPasswordRequest request) {
+        String message = passwordResetService.solicitarRecuperacion(request.getEmail());
+        return ResponseEntity.ok(Map.of("message", message));
+    }
+
+    @PostMapping("/restablecer-password")
+    public ResponseEntity<Map<String, String>> restablecerPassword(@RequestBody ResetPasswordRequest request) {
+        String message = passwordResetService.restablecerPassword(request.getToken(), request.getPassword());
         return ResponseEntity.ok(Map.of("message", message));
     }
 }
