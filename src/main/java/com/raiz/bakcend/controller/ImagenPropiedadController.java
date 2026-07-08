@@ -22,8 +22,10 @@ public class ImagenPropiedadController {
     }
 
     @GetMapping("/propiedad/{propiedadId}")
-    public List<ImagenPropiedadResponse> listar(@PathVariable UUID propiedadId) {
-        return service.listarPorPropiedad(propiedadId);
+    public List<ImagenPropiedadResponse> listar(
+            @PathVariable UUID propiedadId,
+            Authentication authentication) {
+        return service.listarPorPropiedad(propiedadId, authentication);
     }
 
     @PostMapping

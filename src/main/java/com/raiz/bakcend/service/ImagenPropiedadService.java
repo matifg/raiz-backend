@@ -31,21 +31,31 @@ public class ImagenPropiedadService {
     private final AgenteRepository agenteRepository;
     private final UsuarioRepository usuarioRepository;
     private final PropiedadPortadaService portadaService;
+    private final PropiedadService propiedadService;
 
     public ImagenPropiedadService(
             ImagenPropiedadRepository imagenRepository,
             PropiedadRepository propiedadRepository,
             AgenteRepository agenteRepository,
             UsuarioRepository usuarioRepository,
-            PropiedadPortadaService portadaService) {
+            PropiedadPortadaService portadaService,
+            PropiedadService propiedadService) {
         this.imagenRepository = imagenRepository;
         this.propiedadRepository = propiedadRepository;
         this.agenteRepository = agenteRepository;
         this.usuarioRepository = usuarioRepository;
         this.portadaService = portadaService;
+        this.propiedadService = propiedadService;
     }
 
-    public List<ImagenPropiedadResponse> listarPorPropiedad(UUID propiedadId) {
+    public List<ImagenPropiedadResponse> listarPorPropiedad(
+            UUID propiedadId, Authentication authentication) {
+        Propiedad propiedad = propiedadRepository.findById(propiedadId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Propiedad no encontrada"));
+
+        propiedadService.validarPuedeVer(authentication, propiedad);
+
         return imagenRepository.findByPropiedadIdOrderByOrdenAscCreadoEnAsc(propiedadId)
                 .stream()
                 .map(ImagenPropiedadResponse::from)

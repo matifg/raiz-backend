@@ -42,7 +42,7 @@ public class PropiedadController {
     @GetMapping
     public List<Propiedad> listar() {
         return propiedadPortadaService.aplicarPortadas(
-                propiedadRepository.findByPublicacionEstado(PublicacionEstado.PUBLICADA));
+                propiedadRepository.findPublicadasConMembresiaActiva(PublicacionEstado.PUBLICADA));
     }
 
     @GetMapping("/{id}")
@@ -51,12 +51,8 @@ public class PropiedadController {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Propiedad no encontrada"));
 
-        if (propiedadService.esPublicada(propiedad)
-                || propiedadService.puedeVerBorrador(authentication, propiedad)) {
-            return propiedadPortadaService.aplicarPortada(propiedad);
-        }
-
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Propiedad no encontrada");
+        propiedadService.validarPuedeVer(authentication, propiedad);
+        return propiedadPortadaService.aplicarPortada(propiedad);
     }
 
     @PostMapping
@@ -78,9 +74,14 @@ public class PropiedadController {
     }
 
     @GetMapping("/agente/{agenteId}")
-    public List<Propiedad> listarPorAgente(@PathVariable UUID agenteId) {
-        return propiedadPortadaService.aplicarPortadas(
-                propiedadRepository.findByAgenteIdWithImagenes(agenteId));
+    public List<Propiedad> listarPorAgente(
+            @PathVariable UUID agenteId,
+            Authentication authentication) {
+        List<Propiedad> propiedades = propiedadService.puedeGestionarAgente(authentication, agenteId)
+                ? propiedadRepository.findByAgenteIdWithImagenes(agenteId)
+                : propiedadRepository.findPublicadasByAgenteIdConMembresiaActiva(
+                        agenteId, PublicacionEstado.PUBLICADA);
+        return propiedadPortadaService.aplicarPortadas(propiedades);
     }
 
     @PutMapping("/{id}")

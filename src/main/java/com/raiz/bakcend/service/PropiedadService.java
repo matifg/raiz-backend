@@ -87,6 +87,10 @@ public class PropiedadService {
     }
 
     public boolean puedeVerBorrador(Authentication authentication, Propiedad propiedad) {
+        return puedeGestionarAgente(authentication, propiedad.getAgenteId());
+    }
+
+    public boolean puedeGestionarAgente(Authentication authentication, UUID agenteId) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return false;
         }
@@ -102,8 +106,32 @@ public class PropiedadService {
         }
 
         return agenteRepository.findByUsuarioId(usuarioId)
-                .map(agente -> agente.getId().equals(propiedad.getAgenteId()))
+                .map(agente -> agente.getId().equals(agenteId))
                 .orElse(false);
+    }
+
+    public boolean tieneMembresiaActiva(UUID agenteId) {
+        return agenteRepository.findById(agenteId)
+                .flatMap(agente -> usuarioRepository.findById(agente.getUsuarioId()))
+                .map(usuario -> Boolean.TRUE.equals(usuario.getMembresiaActiva()))
+                .orElse(false);
+    }
+
+    public boolean esVisiblePublicamente(Propiedad propiedad) {
+        return esPublicada(propiedad) && tieneMembresiaActiva(propiedad.getAgenteId());
+    }
+
+    public boolean puedeVerPropiedad(Authentication authentication, Propiedad propiedad) {
+        if (puedeGestionarAgente(authentication, propiedad.getAgenteId())) {
+            return true;
+        }
+        return esVisiblePublicamente(propiedad);
+    }
+
+    public void validarPuedeVer(Authentication authentication, Propiedad propiedad) {
+        if (!puedeVerPropiedad(authentication, propiedad)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Propiedad no encontrada");
+        }
     }
 
     private boolean isBlank(String value) {
