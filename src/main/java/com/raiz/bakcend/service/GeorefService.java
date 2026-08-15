@@ -2,6 +2,7 @@ package com.raiz.bakcend.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public class GeorefService {
 
     private final RestClient georefRestClient;
 
-    public GeorefService(RestClient georefRestClient) {
+    public GeorefService(@Qualifier("georefRestClient") RestClient georefRestClient) {
         this.georefRestClient = georefRestClient;
     }
 

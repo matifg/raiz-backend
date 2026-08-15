@@ -1,14 +1,33 @@
 package com.raiz.bakcend.repository;
 
 import com.raiz.bakcend.model.Propiedad;
+import com.raiz.bakcend.model.PropiedadOrigen;
 import com.raiz.bakcend.model.PublicacionEstado;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface PropiedadRepository extends JpaRepository<Propiedad, UUID> {
+
+    boolean existsByOrigenAndExternalId(PropiedadOrigen origen, String externalId);
+
+    Optional<Propiedad> findByOrigenAndExternalId(PropiedadOrigen origen, String externalId);
+
+    boolean existsByWordpressPageId(String wordpressPageId);
+
+    /**
+     * Lock exclusivo de fila para serializar publicación WordPress de la misma propiedad.
+     * Debe usarse dentro de {@code @Transactional}.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Propiedad p WHERE p.id = :id")
+    Optional<Propiedad> findByIdForUpdate(@Param("id") UUID id);
 
     // 🔹 método original (lo podés dejar)
     List<Propiedad> findByAgenteId(UUID agenteId);

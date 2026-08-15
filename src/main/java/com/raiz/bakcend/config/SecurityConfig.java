@@ -32,6 +32,7 @@ public class SecurityConfig {
         .requestMatchers("/auth/recuperar-password").permitAll()
         .requestMatchers("/auth/restablecer-password").permitAll()
         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/test/email").permitAll()
+        .requestMatchers(org.springframework.http.HttpMethod.GET, "/integration/wordpress/**").permitAll()
         // Requerir autenticación para POST
         .requestMatchers(org.springframework.http.HttpMethod.POST, "/propiedades/**").authenticated()
         .requestMatchers(org.springframework.http.HttpMethod.POST, "/imagenes/**").authenticated()

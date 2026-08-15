@@ -13,7 +13,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Data
 @Entity
-@Table(name = "propiedades")
+@Table(
+        name = "propiedades",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_propiedad_origen_external_id",
+                columnNames = {"origen", "external_id"}))
 public class Propiedad {
 
     @Id
@@ -84,5 +88,20 @@ public class Propiedad {
 
     @Column(name = "zona", length = 100)
     private String zona;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "origen", nullable = false, length = 20,
+            columnDefinition = "varchar(20) not null default 'MANUAL'")
+    private PropiedadOrigen origen = PropiedadOrigen.MANUAL;
+
+    @Column(name = "external_id", length = 100)
+    private String externalId;
+
+    /**
+     * ID de la página creada en WordPress al publicar desde Inmo360 (export).
+     * Independiente de externalId (usado en import WP → Inmo).
+     */
+    @Column(name = "wordpress_page_id", length = 100, unique = true)
+    private String wordpressPageId;
 
 }

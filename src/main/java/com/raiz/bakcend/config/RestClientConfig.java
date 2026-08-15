@@ -14,4 +14,11 @@ public class RestClientConfig {
                 .baseUrl(baseUrl)
                 .build();
     }
+
+    @Bean
+    public RestClient wordpressRestClient(@Value("${wordpress.api.base-url}") String baseUrl) {
+        return RestClient.builder()
+                .baseUrl(baseUrl)
+                .build();
+    }
 }
