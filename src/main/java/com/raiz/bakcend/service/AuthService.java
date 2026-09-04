@@ -10,6 +10,10 @@ import com.raiz.bakcend.util.TelefonoUtil;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -73,9 +77,45 @@ public class AuthService {
         }
 
         TokenVerificacion tokenVerificacion = tokenVerificacionService.crearToken(usuario);
-        verificacionEmailService.enviarEmailVerificacion(usuario, tokenVerificacion.getToken());
-        log.info("Email de verificación enviado a {}", usuario.getEmail());
+        scheduleVerificationEmailAfterCommit(usuario, tokenVerificacion.getToken());
 
         return usuario;
+    }
+
+    /**
+     * Envía el mail solo después del commit, para no mandar un token que luego se revierta
+     * ni hacer rollback del usuario si Brevo falla.
+     */
+    private void scheduleVerificationEmailAfterCommit(Usuario usuario, UUID token) {
+        String email = usuario.getEmail();
+        String nombre = usuario.getNombre();
+
+        Runnable send = () -> {
+            try {
+                Usuario snapshot = new Usuario();
+                snapshot.setEmail(email);
+                snapshot.setNombre(nombre);
+                verificacionEmailService.enviarEmailVerificacion(snapshot, token);
+                log.info("Email de verificación enviado a {}", email);
+            } catch (Exception ex) {
+                log.error(
+                        "Usuario/token ya persistidos pero falló el email de verificación email={} token={}",
+                        email,
+                        token,
+                        ex);
+            }
+        };
+
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            send.run();
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                send.run();
+            }
+        });
     }
 }
