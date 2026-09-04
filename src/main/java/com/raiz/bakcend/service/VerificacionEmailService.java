@@ -2,12 +2,16 @@ package com.raiz.bakcend.service;
 
 import com.raiz.bakcend.config.AppProperties;
 import com.raiz.bakcend.model.Usuario;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
 @Service
 public class VerificacionEmailService {
+
+    private static final Logger log = LoggerFactory.getLogger(VerificacionEmailService.class);
 
     private final EmailService emailService;
     private final AppProperties appProperties;
@@ -18,13 +22,23 @@ public class VerificacionEmailService {
     }
 
     public void enviarEmailVerificacion(Usuario usuario, UUID token) {
-        String verificationUrl = appProperties.getFrontend().getUrl()
-                + "/verificar-email?token=" + token;
+        String frontendUrl = appProperties.getFrontend().getUrl();
+        if (frontendUrl == null || frontendUrl.isBlank()) {
+            throw new IllegalStateException("FRONTEND_URL no configurada");
+        }
+        frontendUrl = frontendUrl.endsWith("/")
+                ? frontendUrl.substring(0, frontendUrl.length() - 1)
+                : frontendUrl;
+
+        String verificationUrl = frontendUrl + "/verificar-email?token=" + token;
+        log.info("[VERIFY_EMAIL] Enviando mail to={} token={} url={}",
+                usuario.getEmail(), token, verificationUrl);
 
         String nombre = usuario.getNombre();
         String saludo = (nombre != null && !nombre.isBlank())
                 ? "¡Hola, " + nombre.trim() + "! 👋"
                 : "¡Hola! 👋";
+        String emailCuenta = usuario.getEmail() != null ? usuario.getEmail() : "";
 
         String html = """
                 <!DOCTYPE html>
@@ -60,6 +74,7 @@ public class VerificacionEmailService {
                               <h1 style="margin:0 0 20px 0;font-size:24px;line-height:1.3;font-weight:700;color:#111827;">¡Bienvenido a Inmo360!</h1>
                               <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:#374151;">Gracias por registrarte en Inmo360.</p>
                               <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:#374151;">Estamos muy contentos de que formes parte de nuestra comunidad.</p>
+                              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:#374151;">Este enlace corresponde a la cuenta <strong>{emailCuenta}</strong>.</p>
                               <p style="margin:0 0 32px 0;font-size:16px;line-height:1.7;color:#374151;">Para activar tu cuenta solo necesitás confirmar tu dirección de correo electrónico haciendo clic en el botón de abajo.</p>
                               <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 20px auto;">
                                 <tr>
@@ -113,11 +128,10 @@ public class VerificacionEmailService {
                 </body>
                 </html>
                 """.replace("{verificationUrl}", verificationUrl)
-                .replace("{saludo}", saludo);
+                .replace("{saludo}", saludo)
+                .replace("{emailCuenta}", emailCuenta);
 
-        emailService.sendHtmlEmail(
-                usuario.getEmail(),
-                "Verificá tu cuenta de Inmo360",
-                html);
+        String subject = "Verificá tu cuenta de Inmo360 (" + emailCuenta + ")";
+        emailService.sendHtmlEmail(usuario.getEmail(), subject, html);
     }
 }

@@ -30,13 +30,19 @@ public class TokenVerificacionService {
         this.usuarioRepository = usuarioRepository;
     }
 
+    @Transactional
     public TokenVerificacion crearToken(Usuario usuario) {
+        tokenVerificacionRepository.deleteByUsuarioAndUsadoFalse(usuario);
+
+        UUID tokenUuid = UUID.randomUUID();
         TokenVerificacion tokenVerificacion = new TokenVerificacion();
-        tokenVerificacion.setToken(UUID.randomUUID());
+        tokenVerificacion.setToken(tokenUuid);
         tokenVerificacion.setUsuario(usuario);
         tokenVerificacion.setFechaExpiracion(LocalDateTime.now().plus(VALIDEZ_TOKEN));
         tokenVerificacion.setUsado(false);
-        return tokenVerificacionRepository.save(tokenVerificacion);
+        TokenVerificacion saved = tokenVerificacionRepository.save(tokenVerificacion);
+        log.info("[VERIFY_EMAIL] Token creado userId={} token={}", usuario.getId(), tokenUuid);
+        return saved;
     }
 
     public Optional<TokenVerificacion> buscarPorToken(UUID token) {
