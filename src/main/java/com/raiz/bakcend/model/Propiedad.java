@@ -50,6 +50,11 @@ public class Propiedad {
 
     private Integer banios;
 
+    @Column(name = "total_ambientes")
+    private Integer totalAmbientes;
+
+    private Integer cocheras;
+
     @Column(length = 100)
     private String estado;
 
