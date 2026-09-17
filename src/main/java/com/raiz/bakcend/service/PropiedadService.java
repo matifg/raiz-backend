@@ -59,6 +59,8 @@ public class PropiedadService {
         destino.setSuperficieM2(origen.getSuperficieM2());
         destino.setHabitaciones(origen.getHabitaciones());
         destino.setBanios(origen.getBanios());
+        destino.setTotalAmbientes(origen.getTotalAmbientes());
+        destino.setCocheras(origen.getCocheras());
         destino.setEstado(origen.getEstado());
         destino.setOperacion(origen.getOperacion());
         destino.setMoneda(origen.getMoneda());
