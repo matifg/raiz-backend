@@ -87,10 +87,15 @@ public class PropiedadController {
     @PutMapping("/{id}")
     public Propiedad actualizar(
             @PathVariable UUID id,
-            @RequestBody Propiedad propiedadActualizada) {
+            @RequestBody Propiedad propiedadActualizada,
+            Authentication authentication) {
         Propiedad propiedad = propiedadRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Propiedad no encontrada con ID: " + id));
+
+        if (!propiedadService.puedeGestionarAgente(authentication, propiedad.getAgenteId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No autorizado");
+        }
 
         propiedadService.aplicarActualizacion(propiedad, propiedadActualizada);
 
@@ -101,12 +106,15 @@ public class PropiedadController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void eliminar(@PathVariable UUID id) {
-        if (!propiedadRepository.existsById(id)) {
-            throw new ResponseStatusException(
-                HttpStatus.NOT_FOUND, "Propiedad no encontrada"
-            );
+    public void eliminar(@PathVariable UUID id, Authentication authentication) {
+        Propiedad propiedad = propiedadRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Propiedad no encontrada"));
+
+        if (!propiedadService.puedeGestionarAgente(authentication, propiedad.getAgenteId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No autorizado");
         }
+
         propiedadRepository.deleteById(id);
         adminAgentesCacheService.evictAll("property-deleted propiedadId=" + id);
     }
