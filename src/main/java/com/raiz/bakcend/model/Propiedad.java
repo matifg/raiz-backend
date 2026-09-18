@@ -46,6 +46,9 @@ public class Propiedad {
     @Column(name = "superficie_m2", scale = 2, precision = 10)
     private BigDecimal superficieM2;
 
+    @Column(name = "superficie_cubierta_m2", scale = 2, precision = 10)
+    private BigDecimal superficieCubiertaM2;
+
     private Integer habitaciones;
 
     private Integer banios;

@@ -57,6 +57,7 @@ public class PropiedadService {
         destino.setPrecio(origen.getPrecio());
         destino.setOcultarPrecio(origen.getOcultarPrecio());
         destino.setSuperficieM2(origen.getSuperficieM2());
+        destino.setSuperficieCubiertaM2(origen.getSuperficieCubiertaM2());
         destino.setHabitaciones(origen.getHabitaciones());
         destino.setBanios(origen.getBanios());
         destino.setTotalAmbientes(origen.getTotalAmbientes());
