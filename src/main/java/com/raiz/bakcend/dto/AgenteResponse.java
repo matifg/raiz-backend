@@ -4,10 +4,12 @@ import com.raiz.bakcend.model.Agente;
 import com.raiz.bakcend.model.Usuario;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class AgenteResponse {
     private UUID id;
@@ -15,6 +17,9 @@ public class AgenteResponse {
     private String apellido;
     private String telefono;
     private String email;
+    private String inmobiliaria;
+    private String logoUrl;
+    private String coverUrl;
 
     public static AgenteResponse from(Agente agente, Usuario usuario) {
         return new AgenteResponse(
@@ -22,6 +27,9 @@ public class AgenteResponse {
                 usuario.getNombre(),
                 usuario.getApellido(),
                 usuario.getTelefono(),
-                usuario.getEmail());
+                usuario.getEmail(),
+                agente.getInmobiliaria(),
+                agente.getLogoUrl(),
+                agente.getCoverUrl());
     }
 }

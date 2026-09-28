@@ -8,6 +8,7 @@ import com.raiz.bakcend.repository.AgenteRepository;
 import com.raiz.bakcend.repository.PropiedadRepository;
 import com.raiz.bakcend.repository.UsuarioRepository;
 import com.raiz.bakcend.service.AdminAgentesCacheService;
+import com.raiz.bakcend.service.AgenteService;
 import com.raiz.bakcend.service.PropiedadPortadaService;
 import com.raiz.bakcend.service.PropiedadService;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,8 @@ class PropiedadOwnershipTest {
     private AdminAgentesCacheService adminAgentesCacheService;
     @Mock
     private PropiedadPortadaService propiedadPortadaService;
+    @Mock
+    private AgenteService agenteService;
 
     private PropiedadController controller;
 
@@ -63,7 +66,8 @@ class PropiedadOwnershipTest {
                 agenteRepository,
                 adminAgentesCacheService,
                 propiedadPortadaService,
-                propiedadService);
+                propiedadService,
+                agenteService);
     }
 
     @Test
@@ -72,6 +76,7 @@ class PropiedadOwnershipTest {
         when(propiedadRepository.findById(propiedadId)).thenReturn(Optional.of(existente));
         stubUsuarioAgente(usuarioDuenioId, "AGENTE", agenteDuenioId);
         when(propiedadRepository.save(any(Propiedad.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(agenteService.embeberAgente(any(Propiedad.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Propiedad resultado = controller.actualizar(
                 propiedadId, bodyActualizacion(), auth(usuarioDuenioId));
@@ -99,6 +104,7 @@ class PropiedadOwnershipTest {
         when(propiedadRepository.findById(propiedadId)).thenReturn(Optional.of(existente));
         stubUsuario(usuarioAdminId, "ADMIN");
         when(propiedadRepository.save(any(Propiedad.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(agenteService.embeberAgente(any(Propiedad.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Propiedad resultado = controller.actualizar(
                 propiedadId, bodyActualizacion(), auth(usuarioAdminId));

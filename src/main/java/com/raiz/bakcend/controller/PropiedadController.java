@@ -6,6 +6,7 @@ import com.raiz.bakcend.model.PublicacionEstado;
 import com.raiz.bakcend.repository.AgenteRepository;
 import com.raiz.bakcend.repository.PropiedadRepository;
 import com.raiz.bakcend.service.AdminAgentesCacheService;
+import com.raiz.bakcend.service.AgenteService;
 import com.raiz.bakcend.service.PropiedadPortadaService;
 import com.raiz.bakcend.service.PropiedadService;
 import org.springframework.http.HttpStatus;
@@ -25,24 +26,28 @@ public class PropiedadController {
     private final AdminAgentesCacheService adminAgentesCacheService;
     private final PropiedadPortadaService propiedadPortadaService;
     private final PropiedadService propiedadService;
+    private final AgenteService agenteService;
 
     public PropiedadController(
             PropiedadRepository propiedadRepository,
             AgenteRepository agenteRepository,
             AdminAgentesCacheService adminAgentesCacheService,
             PropiedadPortadaService propiedadPortadaService,
-            PropiedadService propiedadService) {
+            PropiedadService propiedadService,
+            AgenteService agenteService) {
         this.propiedadRepository = propiedadRepository;
         this.agenteRepository = agenteRepository;
         this.adminAgentesCacheService = adminAgentesCacheService;
         this.propiedadPortadaService = propiedadPortadaService;
         this.propiedadService = propiedadService;
+        this.agenteService = agenteService;
     }
 
     @GetMapping
     public List<Propiedad> listar() {
-        return propiedadPortadaService.aplicarPortadas(
-                propiedadRepository.findPublicadasConMembresiaActiva(PublicacionEstado.PUBLICADA));
+        return agenteService.embeberAgentes(
+                propiedadPortadaService.aplicarPortadas(
+                        propiedadRepository.findPublicadasConMembresiaActiva(PublicacionEstado.PUBLICADA)));
     }
 
     @GetMapping("/{id}")
@@ -52,7 +57,7 @@ public class PropiedadController {
                         HttpStatus.NOT_FOUND, "Propiedad no encontrada"));
 
         propiedadService.validarPuedeVer(authentication, propiedad);
-        return propiedadPortadaService.aplicarPortada(propiedad);
+        return agenteService.embeberAgente(propiedadPortadaService.aplicarPortada(propiedad));
     }
 
     @PostMapping
@@ -70,7 +75,7 @@ public class PropiedadController {
 
         Propiedad creada = propiedadRepository.save(propiedad);
         adminAgentesCacheService.evictAll("property-created propiedadId=" + creada.getId());
-        return creada;
+        return agenteService.embeberAgente(creada);
     }
 
     @GetMapping("/agente/{agenteId}")
@@ -81,7 +86,7 @@ public class PropiedadController {
                 ? propiedadRepository.findByAgenteIdWithImagenes(agenteId)
                 : propiedadRepository.findPublicadasByAgenteIdConMembresiaActiva(
                         agenteId, PublicacionEstado.PUBLICADA);
-        return propiedadPortadaService.aplicarPortadas(propiedades);
+        return agenteService.embeberAgentes(propiedadPortadaService.aplicarPortadas(propiedades));
     }
 
     @PutMapping("/{id}")
@@ -101,7 +106,7 @@ public class PropiedadController {
 
         Propiedad guardada = propiedadRepository.save(propiedad);
         adminAgentesCacheService.evictAll("property-updated propiedadId=" + guardada.getId());
-        return guardada;
+        return agenteService.embeberAgente(guardada);
     }
 
     @DeleteMapping("/{id}")
