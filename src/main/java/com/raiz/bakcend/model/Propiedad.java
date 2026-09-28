@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.raiz.bakcend.dto.AgenteResponse;
 
 @Data
 @Entity
@@ -77,6 +78,9 @@ public class Propiedad {
 
     @Column(name = "agente_id", nullable = false)
     private UUID agenteId;
+
+    @Transient
+    private AgenteResponse agente;
 
     @JsonIgnore
     @ElementCollection(fetch = FetchType.LAZY)

@@ -32,7 +32,14 @@ public class Agente {
     @Column(name = "password_hash")
     private String passwordHash;
 
+    /** Nombre comercial / inmobiliaria (opcional). Columna histórica: nombre_inmobiliaria. */
     @Column(name = "nombre_inmobiliaria")
-    private String nombreInmobiliaria;
+    private String inmobiliaria;
+
+    @Column(name = "logo_url", length = 500)
+    private String logoUrl;
+
+    @Column(name = "cover_url", length = 500)
+    private String coverUrl;
 
 }

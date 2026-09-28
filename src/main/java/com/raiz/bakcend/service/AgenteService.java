@@ -5,6 +5,7 @@ import com.raiz.bakcend.dto.AgenteAdminPageResponse;
 import com.raiz.bakcend.dto.AgenteAdminResponse;
 import com.raiz.bakcend.dto.AgenteResponse;
 import com.raiz.bakcend.model.Agente;
+import com.raiz.bakcend.model.Propiedad;
 import com.raiz.bakcend.model.Usuario;
 import com.raiz.bakcend.repository.PropiedadRepository;
 import com.raiz.bakcend.repository.UsuarioRepository;
@@ -18,10 +19,21 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -29,6 +41,12 @@ import java.util.stream.Collectors;
 public class AgenteService {
 
     private static final Logger logger = LoggerFactory.getLogger(AgenteService.class);
+    private static final long MAX_LOGO_BYTES = 2L * 1024 * 1024;
+    private static final long MAX_COVER_BYTES = 5L * 1024 * 1024;
+    private static final Path LOGO_DIR = Paths.get("uploads", "logos");
+    private static final Path COVER_DIR = Paths.get("uploads", "covers");
+    private static final String LOGO_URL_PREFIX = "/uploads/logos/";
+    private static final String COVER_URL_PREFIX = "/uploads/covers/";
 
     private final UsuarioRepository usuarioRepository;
     private final AgenteRepository agenteRepository;
@@ -106,12 +124,218 @@ public class AgenteService {
         usuario.setApellido(request.getApellido().trim());
         usuario.setTelefono(TelefonoUtil.normalizarOpcional(request.getTelefono()));
 
+        if (request.getInmobiliaria() != null) {
+            agente.setInmobiliaria(blankToNull(request.getInmobiliaria()));
+        }
+        if (request.getLogoUrl() != null) {
+            agente.setLogoUrl(blankToNull(request.getLogoUrl()));
+        }
+        if (request.getCoverUrl() != null) {
+            agente.setCoverUrl(blankToNull(request.getCoverUrl()));
+        }
+
         usuarioRepository.save(usuario);
+        agenteRepository.save(agente);
         return AgenteResponse.from(agente, usuario);
+    }
+
+    public AgenteResponse subirLogo(UUID usuarioId, MultipartFile file) {
+        Agente agente = requerirAgenteDelUsuario(usuarioId);
+        validarArchivoImagen(file, MAX_LOGO_BYTES, "logo");
+
+        String extension = extensionPermitida(file);
+        String fileName = agente.getId() + "_" + UUID.randomUUID() + "." + extension;
+
+        try {
+            Files.createDirectories(LOGO_DIR);
+            Files.write(LOGO_DIR.resolve(fileName), file.getBytes());
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo guardar el logo");
+        }
+
+        borrarArchivoLocalSiCorresponde(agente.getLogoUrl(), LOGO_URL_PREFIX, LOGO_DIR);
+
+        agente.setLogoUrl(publicUploadUrl(LOGO_URL_PREFIX, fileName));
+        agenteRepository.save(agente);
+
+        return respuestaAgente(usuarioId, agente);
+    }
+
+    public AgenteResponse eliminarLogo(UUID usuarioId) {
+        Agente agente = requerirAgenteDelUsuario(usuarioId);
+        borrarArchivoLocalSiCorresponde(agente.getLogoUrl(), LOGO_URL_PREFIX, LOGO_DIR);
+        agente.setLogoUrl(null);
+        agenteRepository.save(agente);
+        return respuestaAgente(usuarioId, agente);
+    }
+
+    public AgenteResponse subirCover(UUID usuarioId, MultipartFile file) {
+        Agente agente = requerirAgenteDelUsuario(usuarioId);
+        validarArchivoImagen(file, MAX_COVER_BYTES, "cover");
+
+        String extension = extensionPermitida(file);
+        String fileName = agente.getId() + "_" + UUID.randomUUID() + "." + extension;
+
+        try {
+            Files.createDirectories(COVER_DIR);
+            Files.write(COVER_DIR.resolve(fileName), file.getBytes());
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo guardar el cover");
+        }
+
+        borrarArchivoLocalSiCorresponde(agente.getCoverUrl(), COVER_URL_PREFIX, COVER_DIR);
+
+        agente.setCoverUrl(publicUploadUrl(COVER_URL_PREFIX, fileName));
+        agenteRepository.save(agente);
+
+        return respuestaAgente(usuarioId, agente);
+    }
+
+    public AgenteResponse eliminarCover(UUID usuarioId) {
+        Agente agente = requerirAgenteDelUsuario(usuarioId);
+        borrarArchivoLocalSiCorresponde(agente.getCoverUrl(), COVER_URL_PREFIX, COVER_DIR);
+        agente.setCoverUrl(null);
+        agenteRepository.save(agente);
+        return respuestaAgente(usuarioId, agente);
+    }
+
+    public Propiedad embeberAgente(Propiedad propiedad) {
+        if (propiedad == null) {
+            return null;
+        }
+        propiedad.setAgente(resolverAgenteResponse(propiedad.getAgenteId()));
+        return propiedad;
+    }
+
+    public List<Propiedad> embeberAgentes(List<Propiedad> propiedades) {
+        if (propiedades == null || propiedades.isEmpty()) {
+            return propiedades;
+        }
+
+        Set<UUID> agenteIds = new HashSet<>();
+        for (Propiedad propiedad : propiedades) {
+            if (propiedad.getAgenteId() != null) {
+                agenteIds.add(propiedad.getAgenteId());
+            }
+        }
+
+        Map<UUID, AgenteResponse> porId = new HashMap<>();
+        if (!agenteIds.isEmpty()) {
+            List<Agente> agentes = agenteRepository.findAllById(agenteIds);
+            Set<UUID> usuarioIds = agentes.stream()
+                    .map(Agente::getUsuarioId)
+                    .collect(Collectors.toSet());
+            Map<UUID, Usuario> usuarios = usuarioRepository.findAllById(usuarioIds).stream()
+                    .collect(Collectors.toMap(Usuario::getId, u -> u, (a, b) -> a));
+
+            for (Agente agente : agentes) {
+                Usuario usuario = usuarios.get(agente.getUsuarioId());
+                if (usuario != null) {
+                    porId.put(agente.getId(), AgenteResponse.from(agente, usuario));
+                }
+            }
+        }
+
+        for (Propiedad propiedad : propiedades) {
+            propiedad.setAgente(porId.get(propiedad.getAgenteId()));
+        }
+        return propiedades;
+    }
+
+    private AgenteResponse resolverAgenteResponse(UUID agenteId) {
+        if (agenteId == null) {
+            return null;
+        }
+        return agenteRepository.findById(agenteId)
+                .flatMap(agente -> usuarioRepository.findById(agente.getUsuarioId())
+                        .map(usuario -> AgenteResponse.from(agente, usuario)))
+                .orElse(null);
+    }
+
+    private AgenteResponse respuestaAgente(UUID usuarioId, Agente agente) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        return AgenteResponse.from(agente, usuario);
+    }
+
+    private Agente requerirAgenteDelUsuario(UUID usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        if (!"AGENTE".equalsIgnoreCase(usuario.getRol())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No autorizado o no es agente");
+        }
+        return agenteRepository.findByUsuarioId(usuarioId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.FORBIDDEN, "No autorizado o no es agente"));
+    }
+
+    private void validarArchivoImagen(MultipartFile file, long maxBytes, String tipo) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Archivo de " + tipo + " requerido");
+        }
+        if (file.getSize() > maxBytes) {
+            long maxMb = maxBytes / (1024 * 1024);
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "El " + tipo + " no puede superar " + maxMb + "MB");
+        }
+        extensionPermitida(file);
+    }
+
+    private String extensionPermitida(MultipartFile file) {
+        String contentType = file.getContentType() != null
+                ? file.getContentType().toLowerCase(Locale.ROOT)
+                : "";
+        String original = file.getOriginalFilename() != null
+                ? file.getOriginalFilename().toLowerCase(Locale.ROOT)
+                : "";
+
+        if (contentType.contains("jpeg") || contentType.contains("jpg") || original.endsWith(".jpg")
+                || original.endsWith(".jpeg")) {
+            return "jpg";
+        }
+        if (contentType.contains("png") || original.endsWith(".png")) {
+            return "png";
+        }
+        if (contentType.contains("webp") || original.endsWith(".webp")) {
+            return "webp";
+        }
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST, "Formato no permitido (jpg, png o webp)");
+    }
+
+    private String publicUploadUrl(String urlPrefix, String fileName) {
+        return ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path(urlPrefix)
+                .path(fileName)
+                .toUriString();
+    }
+
+    private void borrarArchivoLocalSiCorresponde(String url, String urlPrefix, Path dir) {
+        if (url == null || url.isBlank()) {
+            return;
+        }
+        int idx = url.indexOf(urlPrefix);
+        if (idx < 0) {
+            return;
+        }
+        String fileName = url.substring(idx + urlPrefix.length());
+        if (fileName.isBlank() || fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(dir.resolve(fileName));
+        } catch (IOException e) {
+            logger.warn("No se pudo borrar archivo local {}: {}", fileName, e.getMessage());
+        }
     }
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private String blankToNull(String value) {
+        return isBlank(value) ? null : value.trim();
     }
 
     public AgenteAdminPageResponse listarAgentesAdminPaginado(int page, int size) {
