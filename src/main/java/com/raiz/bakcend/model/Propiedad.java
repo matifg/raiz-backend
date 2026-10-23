@@ -59,6 +59,25 @@ public class Propiedad {
 
     private Integer cocheras;
 
+    /** Servicios / atributos opcionales (checklist en ABM). */
+    @Column(name = "luz", nullable = false, columnDefinition = "boolean not null default false")
+    private Boolean luz = false;
+
+    @Column(name = "agua", nullable = false, columnDefinition = "boolean not null default false")
+    private Boolean agua = false;
+
+    @Column(name = "gas", nullable = false, columnDefinition = "boolean not null default false")
+    private Boolean gas = false;
+
+    @Column(name = "pavimento", nullable = false, columnDefinition = "boolean not null default false")
+    private Boolean pavimento = false;
+
+    @Column(name = "cloacas", nullable = false, columnDefinition = "boolean not null default false")
+    private Boolean cloacas = false;
+
+    @Column(name = "apta_credito", nullable = false, columnDefinition = "boolean not null default false")
+    private Boolean aptaCredito = false;
+
     @Column(length = 100)
     private String estado;
 

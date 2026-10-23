@@ -62,6 +62,13 @@ public class PropiedadService {
         destino.setBanios(origen.getBanios());
         destino.setTotalAmbientes(origen.getTotalAmbientes());
         destino.setCocheras(origen.getCocheras());
+        destino.setLuz(origen.getLuz());
+        destino.setAgua(origen.getAgua());
+        destino.setGas(origen.getGas());
+        destino.setPavimento(origen.getPavimento());
+        destino.setCloacas(origen.getCloacas());
+        destino.setAptaCredito(origen.getAptaCredito());
+        normalizarServicios(destino);
         destino.setEstado(origen.getEstado());
         destino.setOperacion(origen.getOperacion());
         destino.setMoneda(origen.getMoneda());
@@ -78,10 +85,21 @@ public class PropiedadService {
 
     public void prepararNueva(Propiedad propiedad) {
         propiedad.setPublicacionEstado(resolverPublicacionEstado(propiedad.getPublicacionEstado()));
+        normalizarServicios(propiedad);
 
         if (propiedad.getPublicacionEstado() == PublicacionEstado.PUBLICADA) {
             validarParaPublicacion(propiedad);
         }
+    }
+
+    /** Evita null en columnas boolean NOT NULL cuando el cliente omite el campo. */
+    private void normalizarServicios(Propiedad propiedad) {
+        propiedad.setLuz(Boolean.TRUE.equals(propiedad.getLuz()));
+        propiedad.setAgua(Boolean.TRUE.equals(propiedad.getAgua()));
+        propiedad.setGas(Boolean.TRUE.equals(propiedad.getGas()));
+        propiedad.setPavimento(Boolean.TRUE.equals(propiedad.getPavimento()));
+        propiedad.setCloacas(Boolean.TRUE.equals(propiedad.getCloacas()));
+        propiedad.setAptaCredito(Boolean.TRUE.equals(propiedad.getAptaCredito()));
     }
 
     public boolean esPublicada(Propiedad propiedad) {
